@@ -1,6 +1,8 @@
 const { verifyToken, verifyTokenAndAuthorization, verifyTokenAndAdmin } = require('./verifyToken');
 const User = require('../models/User')
 const router = require('express').Router();
+const {RedisClient} = require('../helpers/redis')
+const userRedisClient = new RedisClient();
 
 //Update
 router.put("/:id",verifyTokenAndAuthorization, async (req, res) => {
@@ -40,12 +42,28 @@ router.get("/find/:id",verifyTokenAndAdmin, async (req, res) => {
 
 //Get All User
 router.get("/all",verifyTokenAndAdmin, async (req, res) => {
+  const query = req.query.new
+  let users = null;
     try{
-        const query = req.query.new
-        const users = query? await User.find().sort({_id: -1}).limit(5) : await User.find()
-        res.status(200).json(users)
+      const usersCacheResult = await userRedisClient.get('users');
+      if(usersCacheResult.data){
+        users = usersCacheResult
+      }else{
+        users ={
+          fromCache:false,
+          data:null
+        }
+        users['data'] = query? await User.find().sort({_id: -1}).limit(5) : await User.find()
+        if (users['data'] && users['data'].length === 0) {
+          throw "API returned an empty array";
+        }
+        await userRedisClient.set('users', JSON.stringify(users))
+      }
+      // res.status(200).json(users)
+      res.send(users);
     }catch(e){
-        res.status(500).json(e)
+      console.log(e);
+      res.status(500).json(e)
     }
 })
 
