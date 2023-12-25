@@ -1,5 +1,5 @@
 const {createRedisClient} = require('../utils/redis')
-
+const {getModelName} = require('./helpers')
 class RedisClient{
     constructor(){
         this.client = createRedisClient();
@@ -12,17 +12,47 @@ class RedisClient{
         }
     }
     async get(key){
-        const result = await this.client.get(key);
-        console.log(result);
-        this.cache_obj.fromCache = true;
-        this.cache_obj.data = JSON.parse(result);
-        return this.cache_obj;
+        let result = await this.client.get(key);
+        result = JSON.parse(result)
+        if(result){
+            result['fromCache'] = true
+            result['data'] = result.data ? result.data : null
+        }
+        return result;
     }
     async set(key, value){
         await this.client.set(key, value);
     }
     async quit(){
         await this.client.quit();
+    }
+    async updateCacheOnDataChange(key, value){
+        await this.client.set(key, value);
+    };
+
+    async cache_datas(key, db_model, {query, listProducts, qNew, qCategory}){
+        let results;
+        const client = await this.get(key);
+        console.log("db_model",getModelName(db_model));
+        if(client){
+            results = client
+        }else{
+            results ={
+            fromCache:false,
+            data:null
+            }
+            if(db_model && db_model instanceof User){
+                results['data'] = query? await db_model.find().sort({_id: -1}).limit(5) : await db_model.find()
+            }else if(db_model && db_model instanceof Product){
+                console.log("jhjhn");
+                results['data'] = await listProducts(qNew, qCategory)
+            }
+            if (results['data'] && results['data'].length === 0) {
+            throw "API returned an empty array";
+            }
+            await this.set(key, JSON.stringify(results))
+        }
+        return results
     }
 }
 

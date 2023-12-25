@@ -46,7 +46,8 @@ router.get("/all",verifyTokenAndAdmin, async (req, res) => {
   let users = null;
     try{
       const usersCacheResult = await userRedisClient.get('users');
-      if(usersCacheResult.data){
+      console.log("usersCacheResult",usersCacheResult);
+      if(usersCacheResult){
         users = usersCacheResult
       }else{
         users ={
