@@ -45,23 +45,8 @@ router.get("/all",verifyTokenAndAdmin, async (req, res) => {
   const query = req.query.new
   let users = null;
     try{
-      const usersCacheResult = await userRedisClient.get('users');
-      console.log("usersCacheResult",usersCacheResult);
-      if(usersCacheResult){
-        users = usersCacheResult
-      }else{
-        users ={
-          fromCache:false,
-          data:null
-        }
-        users['data'] = query? await User.find().sort({_id: -1}).limit(5) : await User.find()
-        if (users['data'] && users['data'].length === 0) {
-          throw "API returned an empty array";
-        }
-        await userRedisClient.set('users', JSON.stringify(users))
-      }
-      // res.status(200).json(users)
-      res.send(users);
+      const usersCacheResult = await userRedisClient.cache_datas('users', User, {query})
+      res.status(200).json(usersCacheResult)
     }catch(e){
       console.log(e);
       res.status(500).json(e)

@@ -1,5 +1,8 @@
 const getModelName = (model) => {
-    return model.match(/Model\s*{\s*([a-zA-Z0-9_$]+)/)[1];
+    const DB_Model = model
+    const DB_Model_instance = new DB_Model(); 
+    const modelName = DB_Model_instance.constructor.modelName;
+    return modelName    
 }
 
 module.exports = {getModelName}

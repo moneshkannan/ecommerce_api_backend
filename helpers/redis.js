@@ -33,7 +33,7 @@ class RedisClient{
     async cache_datas(key, db_model, {query, listProducts, qNew, qCategory}){
         let results;
         const client = await this.get(key);
-        console.log("db_model",getModelName(db_model));
+        const model_name = getModelName(db_model)
         if(client){
             results = client
         }else{
@@ -41,10 +41,9 @@ class RedisClient{
             fromCache:false,
             data:null
             }
-            if(db_model && db_model instanceof User){
+            if(model_name == 'User'){
                 results['data'] = query? await db_model.find().sort({_id: -1}).limit(5) : await db_model.find()
-            }else if(db_model && db_model instanceof Product){
-                console.log("jhjhn");
+            }else if(model_name == 'Product'){
                 results['data'] = await listProducts(qNew, qCategory)
             }
             if (results['data'] && results['data'].length === 0) {
